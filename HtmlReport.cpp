@@ -1,49 +1,49 @@
 //---------------------------------------------------------------------------
 #pragma hdrstop
-
+//---------------------------------------------------------------------------
 #include "HtmlReport.h"
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 //---------------------------------------------------------------------------
-HtmlReport::HtmlReport()
+__fastcall HtmlReport::HtmlReport()
 {
         // Конструктр класса
+Path = GetCurrentDir()+"\\";
+Name = "Report";
+Ext = "htm";
 Text = new TStringList();
-
 }
 //---------------------------------------------------------------------------
-HtmlReport::~HtmlReport()
+__fastcall HtmlReport::~HtmlReport()
 {
         // Деструктор класса
 delete Text;
-
 }
 //---------------------------------------------------------------------------
 //                                ФУНКЦИИ КЛАССА
 //---------------------------------------------------------------------------
-bool HtmlReport::LoadFile(AnsiString Path)
+bool HtmlReport::LoadFromFile(AnsiString SourceFile)
 {
         // Функция загружает HTML-файл из которого далее будет делаться отчет.
 bool ReturnParam = true;
         // Загрузить текст отчета
 try {
-        Text->LoadFromFile(Path);
+        Text->LoadFromFile(SourceFile);
         }
 catch(...) {
         MessageBox(NULL,"Невозможно открыть файл отчета!","ERROR",MB_OK);
         ReturnParam = false;
         }
-
 return ReturnParam;
 }
 //---------------------------------------------------------------------------
-bool HtmlReport::SaveFile(AnsiString Path)
+bool HtmlReport::Save()
 {
         // Сохранение готового отчета
 bool ReturnParam = true;
-        // Загрузить текст отчета
+        // Сохранить текст отчета
 try {
-        Text->SaveToFile(Path);
+        Text->SaveToFile(Path+Name+"."+Ext);
         }
 catch(...) {
         MessageBox(NULL,"Невозможно сохранить отчет!","ERROR",MB_OK);
@@ -51,6 +51,46 @@ catch(...) {
         }
 return ReturnParam;
 }
+//---------------------------------------------------------------------------
+bool HtmlReport::Show()
+{
+        // Показ созданного отчета
+Save(); // Сохранить перед показом
+ShellExecute(NULL,NULL,(Path+Name+"."+Ext).c_str(),NULL,NULL,SW_MAXIMIZE);
+return true;
+}
+//---------------------------------------------------------------------------
+//                      ФУНКЦИИ ДЛЯ РАБОТЫ С НОВЫМ ОТЧЕТОМ
+//---------------------------------------------------------------------------
+bool HtmlReport::New()
+{
+        // Создание нового отчета
+bool Rez = true;
+if(Text->Count>0) Save();       // Сохранить старый отчет
+Text->Clear();  // Очистить документ
+AnsiString Head = "";
+Head += "<HTML>\n";
+Head += "<HEAD>\n";
+Head += "<TITLE><!--/Title/--></TITLE>\n";
+Head += "</HEAD>\n";
+Head += "<BODY>\n";
+Text->Add(Head);
+AnsiString Bottom = "";
+Bottom += "</BODY>\n";
+Bottom += "</HTML>\n";
+Text->Add(Bottom);
+return Rez;
+}
+//---------------------------------------------------------------------------
+bool HtmlReport::Add(AnsiString Txt)
+{
+        // Добавление текста в конец отчета
+bool Rez = true;
+Text->Text = StringReplace(Text->Text,"</BODY>",Txt+"\n</BODY>",TReplaceFlags()<<rfReplaceAll);
+return Rez;
+}
+//---------------------------------------------------------------------------
+//             ФУНКЦИИ ДЛЯ РАБОТЫ С ЗАКЛАДКАМИ В МОДИФИЦИРУЕМОМ ОТЧЕТЕ
 //---------------------------------------------------------------------------
 void HtmlReport::ReplaceZaklad(AnsiString Name, AnsiString Txt)
 {
@@ -72,7 +112,7 @@ try {
 catch(...) {
         return false;
         }
-AnsiString OutputData = "\n<TABLE WIDTH=650 BORDER=1 CELLPADDING=0 CELLSPACING=0>\n";
+AnsiString OutputData = "\n<TABLE WIDTH=90% BORDER=1 CELLPADDING=0 CELLSPACING=0>\n";
         // Создать из Query HTML-таблицу
 if(Data->RecordCount>0) {
         // Если есть записи в Query
